@@ -1,4 +1,4 @@
-# The Small Web
+# Webz-The Small Web
 
 This repository contains the full-stack technical assessment:
 
