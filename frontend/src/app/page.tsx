@@ -13,7 +13,7 @@ type Site = {
   authorId?: { name?: string } | string;
 };
 type SearchResult = { address: string; title: string; snippet: string };
-type Visit = { address: string; arrivedVia: string; visitedAt: string };
+type Visit = { address: string; siteId?: string | null; arrivedVia: string; visitedAt: string };
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
@@ -57,6 +57,10 @@ export default function Home() {
   const [publishAddress, setPublishAddress] = useState("");
   const [publishTitle, setPublishTitle] = useState("");
   const [publishHtml, setPublishHtml] = useState("");
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [loadingSite, setLoadingSite] = useState(false);
+  const [searching, setSearching] = useState(false);
 
   const currentAddress = index >= 0 ? stack[index] : "";
   const canGoBack = index > 0;
@@ -94,7 +98,8 @@ export default function Home() {
     }
     request<Site>(`/sites/${encodeURIComponent(currentAddress)}`)
       .then(setSite)
-      .catch(() => setSite(null));
+      .catch(() => setSite(null))
+      .finally(() => setLoadingSite(false));
   }, [currentAddress]);
 
   async function navigate(nextAddress: string, arrivedVia: string) {
@@ -105,6 +110,7 @@ export default function Home() {
     }
     setError("");
     setMessage("");
+    setLoadingSite(true);
     const nextStack = stack.slice(0, index + 1);
     nextStack.push(normalized);
     setStack(nextStack);
@@ -146,11 +152,14 @@ export default function Home() {
   async function submitSearch(event: FormEvent) {
     event.preventDefault();
     if (!search.trim()) return;
+    setSearching(true);
     try {
       setResults(await request<SearchResult[]>(`/sites/search?q=${encodeURIComponent(search)}`));
       setError("");
     } catch (reason) {
       setError((reason as Error).message);
+    } finally {
+      setSearching(false);
     }
   }
 
@@ -161,6 +170,7 @@ export default function Home() {
       return;
     }
 
+    setPublishing(true);
     try {
       const created = await request<Site>("/sites", {
         method: "POST",
@@ -176,12 +186,23 @@ export default function Home() {
       setPublishAddress("");
       setPublishTitle("");
       setPublishHtml("");
+      setPublishOpen(false);
       await navigate(created.address, "typed");
     } catch (reason) {
       setError((reason as Error).message);
       setMessage("");
+    } finally {
+      setPublishing(false);
     }
   }
+
+  const currentPerson = people.find((person) => person._id === personId);
+  const initials = (currentPerson?.name ?? "?")
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   const author = useMemo(
     () => (typeof site?.authorId === "object" ? site.authorId.name : ""),
@@ -189,65 +210,80 @@ export default function Home() {
   );
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-8 text-slate-900">
-      <div className="mx-auto max-w-6xl">
-        <header className="mb-6">
-          <p className="font-mono text-sm uppercase tracking-widest text-slate-500">The Small Web</p>
-          <h1 className="text-4xl font-bold">A browser for a tiny internet.</h1>
+    <main className="min-h-screen bg-[#f4f7f6] text-[#16212c]">
+      <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-7 lg:px-10">
+        <header className="mb-5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="brand-mark">w</div>
+            <div>
+              <p className="font-display text-xl font-bold tracking-tight">weblet</p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#7a8894]">the small web</p>
+            </div>
+          </div>
+          <button onClick={() => setPublishOpen(true)} className="primary-button hidden sm:inline-flex">+ Publish website</button>
         </header>
 
-        <section className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm">
-          <div className="mb-4 flex flex-wrap gap-2">
-            <button disabled={!canGoBack} onClick={() => move(-1)} className="rounded bg-slate-200 px-3 py-2 disabled:opacity-40">Back</button>
-            <button disabled={!canGoForward} onClick={() => move(1)} className="rounded bg-slate-200 px-3 py-2 disabled:opacity-40">Forward</button>
-            <form onSubmit={submitAddress} className="flex min-w-[260px] flex-1 gap-2">
-              <input value={address} onChange={(event) => setAddress(event.target.value)} placeholder="tidepool.zz" className="min-w-0 flex-1 rounded border border-slate-300 px-3 py-2" />
-              <button className="rounded bg-blue-600 px-4 py-2 font-semibold text-white">Go</button>
+        <section className="browser-shell">
+          <div className="browser-chrome">
+            <div className="flex items-center gap-1">
+              <button aria-label="Go back" title="Go back" disabled={!canGoBack} onClick={() => move(-1)} className="icon-button">←</button>
+              <button aria-label="Go forward" title="Go forward" disabled={!canGoForward} onClick={() => move(1)} className="icon-button">→</button>
+            </div>
+            <form onSubmit={submitAddress} className="address-bar">
+              <span className="text-[#2f9160]">⌁</span>
+              <input aria-label="Website address" value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Type a .zz address" />
+              <button className="address-go">Go</button>
             </form>
-            <select value={personId} onChange={(event) => setPersonId(event.target.value)} className="rounded border border-slate-300 px-3 py-2">
-              {people.map((person) => <option key={person._id} value={person._id}>{person.name}</option>)}
-            </select>
+            <div className="relative">
+              <details className="user-menu">
+                <summary className="user-summary">
+                  <span className="avatar">{initials}</span>
+                  <span className="hidden text-left sm:block"><span className="block text-[10px] uppercase tracking-wider text-[#7a8894]">Browsing as</span><span className="block max-w-[90px] truncate text-sm font-semibold">{currentPerson?.name ?? "Select user"}</span></span>
+                  <span className="text-xs text-[#7a8894]">⌄</span>
+                </summary>
+                <div className="user-popover">
+                  <p className="popover-label">Switch browser identity</p>
+                  {people.map((person) => {
+                    const personInitials = person.name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+                    return <button type="button" key={person._id} onClick={() => setPersonId(person._id)} className={`user-option ${person._id === personId ? "selected" : ""}`}><span className="avatar small">{personInitials}</span><span><strong>{person.name}</strong><small>{person._id === personId ? "Currently browsing" : "Browse as this person"}</small></span><span className="ml-auto">{person._id === personId ? "✓" : ""}</span></button>;
+                  })}
+                </div>
+              </details>
+            </div>
           </div>
 
-          {error && <p className="mb-4 rounded bg-red-50 p-3 text-red-700">{error}</p>}
-          {message && <p className="mb-4 rounded bg-green-50 p-3 text-green-700">{message}</p>}
+          <div className="px-4 pt-4 sm:px-6">
+            {error && <p role="alert" className="notice error">{error}</p>}
+            {message && <p role="status" className="notice success">{message}</p>}
+          </div>
 
-          <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-            <article className="min-h-[460px] rounded border border-slate-200 bg-slate-50 p-4">
-              {site ? (
-                <>
-                  <h2 className="text-2xl font-semibold">{site.title}</h2>
-                  <p className="mb-3 text-sm text-slate-500">{site.address}{author ? ` · by ${author}` : ""}</p>
-                  <iframe title={site.title} srcDoc={frameDocument(site.html)} sandbox="allow-scripts" className="h-[380px] w-full rounded border border-slate-300 bg-white" />
-                </>
-              ) : currentAddress ? (
-                <div className="flex h-full min-h-[380px] items-center justify-center text-center">
-                  <div><h2 className="text-2xl font-semibold">Site not found</h2><p className="text-slate-500">There is no website at {currentAddress}.</p></div>
-                </div>
-              ) : <p className="text-slate-500">Enter an address to begin exploring.</p>}
-            </article>
-
-            <aside className="space-y-5">
-              <form onSubmit={submitSearch} className="space-y-2">
-                <h2 className="font-semibold">Search the web</h2>
-                <div className="flex gap-2"><input value={search} onChange={(event) => setSearch(event.target.value)} className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1" /><button className="rounded bg-slate-800 px-3 py-1 text-white">Search</button></div>
-                {results.map((result) => <button type="button" key={result.address} onClick={() => void navigate(result.address, "search")} className="block w-full rounded border border-slate-200 p-2 text-left hover:bg-slate-50"><strong>{result.title}</strong><span className="block text-xs text-blue-700">{result.address}</span><span className="block text-xs text-slate-500">{result.snippet}</span></button>)}
-              </form>
-              <div>
-                <h2 className="mb-2 font-semibold">History</h2>
-                <div className="max-h-64 space-y-1 overflow-auto text-sm">{history.map((visit) => <button type="button" key={`${visit.visitedAt}-${visit.address}`} onClick={() => void navigate(visit.address, "history")} className="block w-full rounded px-2 py-1 text-left hover:bg-slate-100"><span className="font-medium">{visit.address}</span><span className="ml-2 text-xs text-slate-500">{visit.arrivedVia}</span></button>)}</div>
+          <div className="grid gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <section className="viewport-card">
+              <div className="viewport-toolbar">
+                <div className="flex items-center gap-2"><span className="status-dot" /><span className="font-mono text-xs text-[#7a8894]">{currentAddress || "weblet://home"}</span></div>
+                {site && <span className="text-xs text-[#7a8894]">{author ? `Published by ${author}` : "Small Web site"}</span>}
               </div>
-              <form onSubmit={publish} className="space-y-2 border-t border-slate-200 pt-4">
-                <h2 className="font-semibold">Publish a site</h2>
-                <input required value={publishAddress} onChange={(event) => setPublishAddress(event.target.value)} placeholder="my-site.zz" className="w-full rounded border border-slate-300 px-2 py-1" />
-                <input required value={publishTitle} onChange={(event) => setPublishTitle(event.target.value)} placeholder="Site title" className="w-full rounded border border-slate-300 px-2 py-1" />
-                <textarea required value={publishHtml} onChange={(event) => setPublishHtml(event.target.value)} placeholder="<article><h1>Hello</h1></article>" rows={5} className="w-full rounded border border-slate-300 px-2 py-1 font-mono text-xs" />
-                <button className="w-full rounded bg-green-700 px-3 py-2 font-semibold text-white">Publish</button>
-              </form>
+              {loadingSite ? <div className="state-panel"><span className="loader" /><h2>Loading {currentAddress}...</h2><p>Finding that corner of the Small Web.</p></div> : site ? <iframe title={site.title} srcDoc={frameDocument(site.html)} sandbox="allow-scripts" className="h-[520px] w-full bg-white" /> : currentAddress ? <div className="state-panel"><span className="state-code">404</span><h2>This corner doesn’t exist</h2><p>The address <code>{currentAddress}</code> could not be found.</p><button disabled={!canGoBack} onClick={() => move(-1)} className="secondary-button mt-5">Go back</button></div> : <div className="state-panel home-state"><span className="home-spark">✦</span><p className="eyebrow">Welcome to weblet</p><h1>Explore the <em>Small Web.</em></h1><p>Discover thoughtful little corners, follow links, and publish something of your own.</p><button onClick={() => setPublishOpen(true)} className="primary-button mt-5">+ Publish your corner</button></div>}
+            </section>
+
+            <aside className="space-y-4">
+              <section className="side-card">
+                <div className="mb-3 flex items-center justify-between"><div><p className="eyebrow">Discover</p><h2 className="section-title">Search the Small Web</h2></div><span className="text-lg text-[#2e7bd6]">⌕</span></div>
+                <form onSubmit={submitSearch} className="search-box"><input aria-label="Search websites" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search pages and ideas" /><button aria-label="Search">{searching ? "…" : "→"}</button></form>
+                {search && !searching && results.length === 0 && <p className="empty-copy">No sites matched that search.</p>}
+                <div className="mt-3 space-y-2">{results.map((result) => <button type="button" key={result.address} onClick={() => void navigate(result.address, "search")} className="result-item"><span className="result-icon">↗</span><span className="min-w-0"><strong className="block truncate">{result.title}</strong><span className="block font-mono text-[11px] text-[#2e7bd6]">{result.address}</span><span className="mt-1 block line-clamp-2 text-xs text-[#7a8894]">{result.snippet}</span></span></button>)}</div>
+              </section>
+              <section className="side-card">
+                <div className="mb-3 flex items-end justify-between"><div><p className="eyebrow">Your trail</p><h2 className="section-title">Recent visits</h2></div><span className="text-xs text-[#7a8894]">{history.length} visits</span></div>
+                <div className="history-list">{history.length ? history.map((visit) => <button type="button" key={`${visit.visitedAt}-${visit.address}`} onClick={() => void navigate(visit.address, "history")} className={`history-item ${visit.address === currentAddress ? "current" : ""}`}><span className="history-icon">{visit.siteId ? "◌" : "!"}</span><span className="min-w-0"><strong className="block truncate">{visit.address}</strong><span className="block text-xs text-[#7a8894]">{visit.arrivedVia} · {new Date(visit.visitedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span></span></button>) : <p className="empty-copy">Your visited sites will appear here.</p>}</div>
+              </section>
+              <button onClick={() => setPublishOpen(true)} className="primary-button w-full sm:hidden">+ Publish website</button>
             </aside>
           </div>
         </section>
+        <footer className="mt-5 flex justify-between px-1 font-mono text-[10px] uppercase tracking-widest text-[#9aa5ac]"><span>Made for curious minds</span><span>10 sites · 4 explorers</span></footer>
       </div>
+      {publishOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setPublishOpen(false); }}><section role="dialog" aria-modal="true" aria-labelledby="publish-title" className="publish-modal"><div className="mb-6 flex items-start justify-between"><div><span className="modal-spark">✦</span><p className="eyebrow mt-3">Create something new</p><h2 id="publish-title" className="mt-1 text-2xl font-bold tracking-tight">Publish your corner<br />of the Small Web.</h2><p className="mt-2 text-sm text-[#7a8894]">A little space for your ideas, stories, or experiments.</p></div><button aria-label="Close publish dialog" onClick={() => setPublishOpen(false)} className="icon-button">×</button></div><form onSubmit={publish} className="space-y-4"><label className="field-label">Website address<div className="input-with-suffix"><input required value={publishAddress} onChange={(event) => setPublishAddress(event.target.value)} placeholder="my-little-site" /><span>.zz</span></div></label><label className="field-label">Website title<input required value={publishTitle} onChange={(event) => setPublishTitle(event.target.value)} placeholder="A thoughtful title" /></label><label className="field-label">Website content<span className="ml-2 font-normal normal-case tracking-normal text-[#9aa5ac]">HTML supported</span><textarea required value={publishHtml} onChange={(event) => setPublishHtml(event.target.value)} placeholder={"<h1>Hello, Small Web!</h1>\n\n<p>Welcome to my website.</p>"} rows={7} /></label><div className="flex justify-end gap-2 border-t border-[#e3e8e6] pt-4"><button type="button" onClick={() => setPublishOpen(false)} className="secondary-button">Cancel</button><button disabled={publishing} className="primary-button">{publishing ? "Publishing..." : "Publish website →"}</button></div></form></section></div>}
     </main>
   );
 }
