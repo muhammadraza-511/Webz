@@ -58,9 +58,9 @@ npm run dev
 Open <http://localhost:3001>. The backend listens on
 <http://localhost:3000>.
 
-The generated applications are intentionally still at their framework
-starter screens. The backend now includes the initial MongoDB schemas for
-people, sites, and visits, plus deterministic seed data.
+The frontend provides the browser controls, isolated site rendering, search,
+history, and publishing form. The backend exposes the people, sites, and
+visits APIs.
 
 ## Step two: seed MongoDB
 
@@ -81,8 +81,18 @@ You can inspect the database in MongoDB Compass with:
 mongodb://localhost:27017
 ```
 
-The current implementation stops at the data layer. API endpoints and the
-browser UI will be added in the following steps.
+## API endpoints
+
+- `GET /people`
+- `GET /sites/:address`
+- `POST /sites`
+- `GET /sites/search?q=keyword`
+- `POST /visits`
+- `GET /visits/history/:personId`
+
+Published HTML is rendered inside a sandboxed iframe. The iframe can send
+fictional `.zz` link clicks to the parent browser, but it does not receive
+same-origin access to the Next.js application.
 
 ## Stop MongoDB
 

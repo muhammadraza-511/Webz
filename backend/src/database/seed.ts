@@ -67,37 +67,38 @@ async function seed(): Promise<void> {
   }
 
   await VisitModel.deleteMany({});
-  const trail = ['tidepool.zz', 'reedbank.zz', 'lantern.zz', 'atlas.zz', 'mossline.zz', 'copperfield.zz', 'nightjar.zz', 'commonroom.zz'];
-  const visitDocs: SeedVisit[] = trail.map((address, index) => ({
-    personId: personIds.get('Ali'),
-    address,
-    siteId: siteIds.get(address),
-    arrivedVia: index === 0 ? ArrivedVia.Typed : ArrivedVia.Link,
-    visitedAt: new Date(Date.UTC(2026, 0, 1, 10, index * 5)),
-  }));
-  visitDocs.push(
-    {
-      personId: personIds.get('Ali'),
-      address: 'lantern.zz',
-      siteId: siteIds.get('lantern.zz'),
-      arrivedVia: ArrivedVia.Back,
-      visitedAt: new Date(Date.UTC(2026, 0, 1, 10, 45)),
-    },
-    {
-      personId: personIds.get('Maya'),
-      address: 'mossline.zz',
-      siteId: siteIds.get('mossline.zz'),
-      arrivedVia: ArrivedVia.Search,
-      visitedAt: new Date(Date.UTC(2026, 0, 1, 11)),
-    },
-    {
-      personId: personIds.get('Noor'),
-      address: 'missing.zz',
-      siteId: null,
-      arrivedVia: ArrivedVia.Typed,
-      visitedAt: new Date(Date.UTC(2026, 0, 1, 11, 15)),
-    },
-  );
+  const trails: Array<[string, string[], Date]> = [
+    ['Ali', ['tidepool.zz', 'reedbank.zz', 'lantern.zz', 'atlas.zz', 'mossline.zz', 'copperfield.zz', 'nightjar.zz', 'commonroom.zz', 'driftwood.zz', 'lantern.zz', 'atlas.zz', 'missing.zz'], new Date(Date.UTC(2026, 0, 1, 10))],
+    ['Maya', ['mossline.zz', 'tidepool.zz', 'reedbank.zz', 'tidepool.zz', 'nightjar.zz'], new Date(Date.UTC(2026, 0, 1, 11))],
+    ['Noor', ['signal.zz', 'lantern.zz', 'missing.zz'], new Date(Date.UTC(2026, 0, 1, 12))],
+    ['Ravi', ['copperfield.zz', 'mossline.zz', 'commonroom.zz'], new Date(Date.UTC(2026, 0, 1, 13))],
+  ];
+  const visitDocs: SeedVisit[] = [];
+  for (const [person, trail, start] of trails) {
+    trail.forEach((address, index) => {
+      const firstVisit = index === 0;
+      const previousAddress = index > 0 ? trail[index - 1] : undefined;
+      const arrivedVia = !firstVisit && address === previousAddress
+        ? ArrivedVia.Back
+        : firstVisit
+          ? ArrivedVia.Typed
+          : ArrivedVia.Link;
+      visitDocs.push({
+        personId: personIds.get(person),
+        address,
+        siteId: siteIds.get(address) ?? null,
+        arrivedVia,
+        visitedAt: new Date(start.getTime() + index * 5 * 60_000),
+      });
+    });
+  }
+  visitDocs.push({
+    personId: personIds.get('Maya'),
+    address: 'atlas.zz',
+    siteId: siteIds.get('atlas.zz') ?? null,
+    arrivedVia: ArrivedVia.Search,
+    visitedAt: new Date(Date.UTC(2026, 0, 1, 11, 30)),
+  });
   await VisitModel.insertMany(visitDocs);
   console.log(`Seeded ${people.length} people, ${sites.length} sites, and ${visitDocs.length} visits.`);
 }

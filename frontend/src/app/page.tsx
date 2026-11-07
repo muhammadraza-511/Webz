@@ -54,6 +54,9 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [publishAddress, setPublishAddress] = useState("");
+  const [publishTitle, setPublishTitle] = useState("");
+  const [publishHtml, setPublishHtml] = useState("");
 
   const currentAddress = index >= 0 ? stack[index] : "";
   const canGoBack = index > 0;
@@ -87,10 +90,8 @@ export default function Home() {
 
   useEffect(() => {
     if (!currentAddress) {
-      setSite(null);
       return;
     }
-    setAddress(currentAddress);
     request<Site>(`/sites/${encodeURIComponent(currentAddress)}`)
       .then(setSite)
       .catch(() => setSite(null));
@@ -108,6 +109,7 @@ export default function Home() {
     nextStack.push(normalized);
     setStack(nextStack);
     setIndex(nextStack.length - 1);
+    setAddress(normalized);
     if (personId) {
       try {
         await request("/visits", {
@@ -130,6 +132,7 @@ export default function Home() {
     const nextIndex = index + delta;
     if (nextIndex < 0 || nextIndex >= stack.length || !personId) return;
     setIndex(nextIndex);
+    setAddress(stack[nextIndex]);
     void request("/visits", {
       method: "POST",
       body: JSON.stringify({
@@ -148,6 +151,35 @@ export default function Home() {
       setError("");
     } catch (reason) {
       setError((reason as Error).message);
+    }
+  }
+
+  async function publish(event: FormEvent) {
+    event.preventDefault();
+    if (!personId) {
+      setError("Select a publisher first.");
+      return;
+    }
+
+    try {
+      const created = await request<Site>("/sites", {
+        method: "POST",
+        body: JSON.stringify({
+          authorId: personId,
+          address: publishAddress,
+          title: publishTitle,
+          html: publishHtml,
+        }),
+      });
+      setMessage(`Published ${created.address}.`);
+      setError("");
+      setPublishAddress("");
+      setPublishTitle("");
+      setPublishHtml("");
+      await navigate(created.address, "typed");
+    } catch (reason) {
+      setError((reason as Error).message);
+      setMessage("");
     }
   }
 
@@ -205,6 +237,13 @@ export default function Home() {
                 <h2 className="mb-2 font-semibold">History</h2>
                 <div className="max-h-64 space-y-1 overflow-auto text-sm">{history.map((visit) => <button type="button" key={`${visit.visitedAt}-${visit.address}`} onClick={() => void navigate(visit.address, "history")} className="block w-full rounded px-2 py-1 text-left hover:bg-slate-100"><span className="font-medium">{visit.address}</span><span className="ml-2 text-xs text-slate-500">{visit.arrivedVia}</span></button>)}</div>
               </div>
+              <form onSubmit={publish} className="space-y-2 border-t border-slate-200 pt-4">
+                <h2 className="font-semibold">Publish a site</h2>
+                <input required value={publishAddress} onChange={(event) => setPublishAddress(event.target.value)} placeholder="my-site.zz" className="w-full rounded border border-slate-300 px-2 py-1" />
+                <input required value={publishTitle} onChange={(event) => setPublishTitle(event.target.value)} placeholder="Site title" className="w-full rounded border border-slate-300 px-2 py-1" />
+                <textarea required value={publishHtml} onChange={(event) => setPublishHtml(event.target.value)} placeholder="<article><h1>Hello</h1></article>" rows={5} className="w-full rounded border border-slate-300 px-2 py-1 font-mono text-xs" />
+                <button className="w-full rounded bg-green-700 px-3 py-2 font-semibold text-white">Publish</button>
+              </form>
             </aside>
           </div>
         </section>
