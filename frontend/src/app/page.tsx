@@ -172,11 +172,12 @@ export default function Home() {
 
     setPublishing(true);
     try {
+      const addressName = publishAddress.trim().toLowerCase().replace(/\.zz$/i, "");
       const created = await request<Site>("/sites", {
         method: "POST",
         body: JSON.stringify({
           authorId: personId,
-          address: publishAddress,
+          address: `${addressName}.zz`,
           title: publishTitle,
           html: publishHtml,
         }),
@@ -212,15 +213,14 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#f4f7f6] text-[#16212c]">
       <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-7 lg:px-10">
-        <header className="mb-5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="brand-mark">w</div>
+        <header className="site-header">
+          <div className="brand-lockup">
+            <div className="brand-mark">W</div>
             <div>
               <p className="font-display text-xl font-bold tracking-tight">weblet</p>
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#7a8894]">the small web</p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#66727d]">the small web</p>
             </div>
           </div>
-          <button onClick={() => setPublishOpen(true)} className="primary-button hidden sm:inline-flex">+ Publish website</button>
         </header>
 
         <section className="browser-shell">
@@ -238,18 +238,19 @@ export default function Home() {
               <details className="user-menu">
                 <summary className="user-summary">
                   <span className="avatar">{initials}</span>
-                  <span className="hidden text-left sm:block"><span className="block text-[10px] uppercase tracking-wider text-[#7a8894]">Browsing as</span><span className="block max-w-[90px] truncate text-sm font-semibold">{currentPerson?.name ?? "Select user"}</span></span>
-                  <span className="text-xs text-[#7a8894]">⌄</span>
+                  <span className="hidden text-left sm:block"><span className="block text-[10px] uppercase tracking-wider text-[#7a8894]"></span><span className="block max-w-[90px] truncate text-sm font-semibold">{currentPerson?.name ?? "Select user"}</span></span>
+                  <span className="user-caret" aria-hidden="true">▾</span>
                 </summary>
                 <div className="user-popover">
                   <p className="popover-label">Switch browser identity</p>
                   {people.map((person) => {
                     const personInitials = person.name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
-                    return <button type="button" key={person._id} onClick={() => setPersonId(person._id)} className={`user-option ${person._id === personId ? "selected" : ""}`}><span className="avatar small">{personInitials}</span><span><strong>{person.name}</strong><small>{person._id === personId ? "Currently browsing" : "Browse as this person"}</small></span><span className="ml-auto">{person._id === personId ? "✓" : ""}</span></button>;
+                    return <button type="button" key={person._id} onClick={(event) => { setPersonId(person._id); event.currentTarget.closest("details")?.removeAttribute("open"); }} className={`user-option ${person._id === personId ? "selected" : ""}`}><span className="avatar small">{personInitials}</span><span><strong>{person.name}</strong><small>{person._id === personId ? "Currently browsing" : "Browse as this person"}</small></span><span className="ml-auto">{person._id === personId ? "✓" : ""}</span></button>;
                   })}
                 </div>
               </details>
             </div>
+            <button onClick={() => setPublishOpen(true)} className="primary-button publish-header">Publish Website</button>
           </div>
 
           <div className="px-4 pt-4 sm:px-6">
@@ -257,16 +258,16 @@ export default function Home() {
             {message && <p role="status" className="notice success">{message}</p>}
           </div>
 
-          <div className="grid gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="space-y-5 p-4 sm:p-6">
             <section className="viewport-card">
               <div className="viewport-toolbar">
                 <div className="flex items-center gap-2"><span className="status-dot" /><span className="font-mono text-xs text-[#7a8894]">{currentAddress || "weblet://home"}</span></div>
                 {site && <span className="text-xs text-[#7a8894]">{author ? `Published by ${author}` : "Small Web site"}</span>}
               </div>
-              {loadingSite ? <div className="state-panel"><span className="loader" /><h2>Loading {currentAddress}...</h2><p>Finding that corner of the Small Web.</p></div> : site ? <iframe title={site.title} srcDoc={frameDocument(site.html)} sandbox="allow-scripts" className="h-[520px] w-full bg-white" /> : currentAddress ? <div className="state-panel"><span className="state-code">404</span><h2>This corner doesn’t exist</h2><p>The address <code>{currentAddress}</code> could not be found.</p><button disabled={!canGoBack} onClick={() => move(-1)} className="secondary-button mt-5">Go back</button></div> : <div className="state-panel home-state"><span className="home-spark">✦</span><p className="eyebrow">Welcome to weblet</p><h1>Explore the <em>Small Web.</em></h1><p>Discover thoughtful little corners, follow links, and publish something of your own.</p><button onClick={() => setPublishOpen(true)} className="primary-button mt-5">+ Publish your corner</button></div>}
+              {loadingSite ? <div className="state-panel"><span className="loader" /><h2>Loading {currentAddress}...</h2><p>Finding that corner of the Small Web.</p></div> : site ? <iframe title={site.title} srcDoc={frameDocument(site.html)} sandbox="allow-scripts" className="h-[620px] w-full bg-white" /> : currentAddress ? <div className="state-panel"><span className="state-code">404</span><h2>This corner doesn’t exist</h2><p>The address <code>{currentAddress}</code> could not be found.</p><button disabled={!canGoBack} onClick={() => move(-1)} className="secondary-button mt-5">Go back</button></div> : <div className="state-panel home-state"><span className="home-spark">✦</span><p className="eyebrow">Welcome to weblet</p><h1>Explore the <em>Small Web.</em></h1><p>Discover thoughtful little corners, follow links, and publish something of your own.</p><button onClick={() => setPublishOpen(true)} className="primary-button mt-5">+ Publish your corner</button></div>}
             </section>
 
-            <aside className="space-y-4">
+            <aside className="support-panels grid gap-4 lg:grid-cols-2">
               <section className="side-card">
                 <div className="mb-3 flex items-center justify-between"><div><p className="eyebrow">Discover</p><h2 className="section-title">Search the Small Web</h2></div><span className="text-lg text-[#2e7bd6]">⌕</span></div>
                 <form onSubmit={submitSearch} className="search-box"><input aria-label="Search websites" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search pages and ideas" /><button aria-label="Search">{searching ? "…" : "→"}</button></form>
@@ -277,7 +278,6 @@ export default function Home() {
                 <div className="mb-3 flex items-end justify-between"><div><p className="eyebrow">Your trail</p><h2 className="section-title">Recent visits</h2></div><span className="text-xs text-[#7a8894]">{history.length} visits</span></div>
                 <div className="history-list">{history.length ? history.map((visit) => <button type="button" key={`${visit.visitedAt}-${visit.address}`} onClick={() => void navigate(visit.address, "history")} className={`history-item ${visit.address === currentAddress ? "current" : ""}`}><span className="history-icon">{visit.siteId ? "◌" : "!"}</span><span className="min-w-0"><strong className="block truncate">{visit.address}</strong><span className="block text-xs text-[#7a8894]">{visit.arrivedVia} · {new Date(visit.visitedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span></span></button>) : <p className="empty-copy">Your visited sites will appear here.</p>}</div>
               </section>
-              <button onClick={() => setPublishOpen(true)} className="primary-button w-full sm:hidden">+ Publish website</button>
             </aside>
           </div>
         </section>

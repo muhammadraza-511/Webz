@@ -12,13 +12,6 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
@@ -27,9 +20,11 @@ body {
 
 @layer components {
   .font-display { font-family: var(--font-geist-sans), Arial, sans-serif; }
-  .brand-mark { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 11px; background: #16212c; color: #f0b87a; font-family: Georgia, serif; font-size: 24px; font-style: italic; box-shadow: 0 5px 12px #16212c22; }
-  .browser-shell { overflow: hidden; border: 1px solid #d3dbd8; border-radius: 18px; background: #fbfcfc; box-shadow: 0 20px 55px #16212c12; }
-  .browser-chrome { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #e3e8e6; background: #f8faf9; padding: 12px 16px; }
+  .site-header { display: flex; align-items: center; justify-content: space-between; min-height: 58px; margin-bottom: 12px; }
+  .brand-lockup { display: flex; align-items: center; gap: 11px; }
+  .brand-mark { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid #263746; border-radius: 9px; background: #263746; color: #f7f8f6; font-family: Georgia, serif; font-size: 19px; font-weight: 700; box-shadow: 0 4px 10px #26374620; }
+  .browser-shell { overflow: hidden; border: 1px solid #cbd4d2; border-radius: 16px; background: #ffffff; box-shadow: 0 16px 40px #26374614; }
+  .browser-chrome { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #dce3e1; background: #f8faf9; padding: 10px 14px; }
   .icon-button { display: inline-grid; height: 36px; width: 36px; place-items: center; border: 1px solid #d3dbd8; border-radius: 10px; background: #fbfcfc; color: #41505e; font-size: 18px; transition: .2s ease; }
   .icon-button:hover:not(:disabled) { border-color: #2e7bd6; color: #2e7bd6; background: #e7f0fb; }
   .icon-button:disabled { cursor: not-allowed; opacity: .35; }
@@ -37,12 +32,14 @@ body {
   .address-bar:focus-within { border-color: #2e7bd6; box-shadow: 0 0 0 3px #2e7bd622; }
   .address-bar input { min-width: 0; flex: 1; border: 0; background: transparent; padding: 9px 0; font-family: var(--font-geist-mono), monospace; font-size: 12px; outline: 0; }
   .address-go { border-radius: 8px; background: #16212c; padding: 7px 12px; color: #fff; font-size: 12px; font-weight: 700; }
-  .primary-button { display: inline-flex; align-items: center; justify-content: center; border-radius: 9px; background: #2e7bd6; padding: 10px 15px; color: white; font-size: 12px; font-weight: 700; box-shadow: 0 5px 12px #2e7bd633; transition: .2s ease; }
-  .primary-button:hover:not(:disabled) { background: #2468b8; transform: translateY(-1px); }
+  .primary-button { display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; background: #263746; padding: 10px 15px; color: #ffffff; font-size: 12px; font-weight: 700; box-shadow: 0 4px 10px #26374620; transition: .2s ease; }
+  .primary-button:hover:not(:disabled) { background: #182833; transform: translateY(-1px); }
   .primary-button:disabled { opacity: .55; }
+  .publish-header { flex: 0 0 auto; white-space: nowrap; padding: 9px 12px; }
   .secondary-button { border: 1px solid #d3dbd8; border-radius: 9px; background: #fff; padding: 9px 14px; color: #41505e; font-size: 12px; font-weight: 700; }
   .user-summary { display: flex; cursor: pointer; list-style: none; align-items: center; gap: 8px; }
   .user-summary::-webkit-details-marker { display: none; }
+  .user-caret { display: inline-block; color: #66727d; font-size: 12px; line-height: 1; transform: translateY(-1px); }
   .avatar { display: inline-grid; height: 32px; width: 32px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: #fbe8d0; color: #a45b20; font-size: 11px; font-weight: 800; }
   .avatar.small { height: 30px; width: 30px; }
   .user-menu { position: relative; }
@@ -57,10 +54,10 @@ body {
   .notice { margin-bottom: 0; border-radius: 9px; padding: 10px 12px; font-size: 12px; }
   .notice.error { background: #fae8e7; color: #a8322e; }
   .notice.success { background: #e4f3eb; color: #24734b; }
-  .viewport-card { overflow: hidden; min-height: 580px; border: 1px solid #d3dbd8; border-radius: 13px; background: white; }
+  .viewport-card { overflow: hidden; min-height: 720px; border: 1px solid #cbd4d2; border-radius: 13px; background: white; box-shadow: 0 5px 16px #2637460a; }
   .viewport-toolbar { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e3e8e6; padding: 11px 15px; }
   .status-dot { height: 7px; width: 7px; border-radius: 50%; background: #2f9160; box-shadow: 0 0 0 3px #e4f3eb; }
-  .state-panel { display: flex; min-height: 520px; flex-direction: column; align-items: center; justify-content: center; padding: 32px; text-align: center; }
+  .state-panel { display: flex; min-height: 620px; flex-direction: column; align-items: center; justify-content: center; padding: 32px; text-align: center; }
   .state-panel h2 { margin-top: 12px; font-size: 25px; font-weight: 700; }
   .state-panel p { max-width: 390px; color: #7a8894; font-size: 14px; }
   .state-code { color: #c4453d; font-family: Georgia, serif; font-size: 72px; line-height: 1; }
@@ -69,7 +66,7 @@ body {
   .home-state h1 em { color: #2e7bd6; font-style: normal; }
   .loader { height: 30px; width: 30px; border: 3px solid #d3dbd8; border-top-color: #2e7bd6; border-radius: 50%; animation: spin 1s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .side-card { border: 1px solid #d3dbd8; border-radius: 13px; background: #fbfcfc; padding: 16px; }
+  .side-card { border: 1px solid #cbd4d2; border-radius: 13px; background: #ffffff; padding: 16px; }
   .section-title { margin-top: 3px; font-size: 16px; font-weight: 700; }
   .search-box { display: flex; align-items: center; gap: 5px; border: 1px solid #d3dbd8; border-radius: 9px; background: white; padding: 3px 4px 3px 10px; }
   .search-box:focus-within { border-color: #2e7bd6; box-shadow: 0 0 0 3px #2e7bd622; }
@@ -91,4 +88,10 @@ body {
   .input-with-suffix:focus-within { border-color: #2e7bd6; box-shadow: 0 0 0 3px #2e7bd622; }
   .input-with-suffix input { margin: 0; border: 0; box-shadow: none; padding-left: 0; }
   .input-with-suffix span { padding: 10px 11px 10px 0; color: #7a8894; font-family: monospace; }
+  @media (max-width: 640px) {
+    .browser-chrome { flex-wrap: wrap; }
+    .browser-chrome .address-bar { order: 3; flex-basis: 100%; }
+    .publish-header { margin-left: auto; }
+    .viewport-card { min-height: 620px; }
+  }
 }
